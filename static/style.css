@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css?family=Lato');
+
+body {
+  margin: 2em auto 10em auto;
+  width: 50em;
+  font-family: 'Lato';
+}
+
+input {
+  font: inherit;
+}
+
+select {
+  font: inherit;
+  width: 14em;
+}
+
+option {
+  font: inherit;
+}
+
+button {
+  font: inherit;
+}
+
+input[type="checkbox"] {
+  margin-right: 1em;
+}
+
+#submit {
+  margin-top: 1em;
+}
+
+hr {
+  background-color: #000;
+  height: 1px;
+  border: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+
+h2 {
+  font-weight: normal;
+  margin-top: 0;
+  color: #666;
+}

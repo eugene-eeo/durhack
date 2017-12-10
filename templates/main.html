@@ -1,7 +1,9 @@
 <html>
 <head>
+  <title>undex</title>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
   <script src='/static/korah.min.js'></script>
+  <link rel='stylesheet' href='/static/style.css'/>
   <style>
 #map {
   width: 100%;
@@ -10,60 +12,98 @@
   </style>
 </head>
 <body>
-  <h1>Find</h1>
+  <h1>undex</h1>
+  <h2>the ‘unoccupied’ index</h2>
 
   <div id='constraints'></div>
   <button id='submit'>Find</button>
   <hr/>
   <div id="map"></div>
   <div id='results'></div>
+  <div id='radii'></div>
 
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdh5RdEECP7SE1AvSc_0g3BNO632t_Ghk"></script>
   <script>
 TYPES = {
-    'Electronics Store': 'electronics_store',
-    'ATM':               'atm',
-    'Place of Worship':  'place_of_worship',
-    'Bar':               'bar',
-    'Landmark':          'point_of_interest',
-    'Banks':             'bank',
-    'Lodging':           'lodging',
-    'Food':              'food',
-    'Stores':            'store',
-    'Establishments':    'establishment',
-    'Restaurant':        'restaurant',
-    'Theatres':          'movie_theater',
-    'Museums':           'museum',
-    'Park':              'park',
-    'University':        'university',
-}
+    'Electronics Stores': 'electronics_store',
+    'ATMs':               'atm',
+    'Places of Worship':  'place_of_worship',
+    'Bars':               'bar',
+    'Landmarks':          'point_of_interest',
+    'Banks':              'bank',
+    'Lodgings':           'lodging',
+    'Food':               'food',
+    'Stores':             'store',
+    'Establishments':     'establishment',
+    'Restaurant':         'restaurant',
+    'Theatres':           'movie_theater',
+    'Museums':            'museum',
+    'Park':               'park',
+    'University':         'university',
+};
 
 var constraints = {};
 var $_ = document.querySelector.bind(document);
+
+function getAvailableConstraints() {
+  return Object.keys(TYPES).filter(text => {
+    var id = TYPES[text];
+    return !(id in constraints);
+  });
+}
 
 function begin() {
   var input_row = kr('div');
   var select = kr('select');
 
-  Object.keys(TYPES).forEach(text => {
-    var id = TYPES[text];
-    if (!(id in constraints)) {
-      select.appendChild(kr('option', {'value': id}, text))
-    }
+  getAvailableConstraints().forEach(text => {
+    select.appendChild(kr('option', {'value': TYPES[text]}, text))
   });
 
   var btn = kr.button('+');
-  var input = kr.input({'type': 'number'});
+  var input = kr.input({'type': 'number', 'placeholder': 'Distance from (m)'});
+  var checkbox = kr.input({'type': 'checkbox'});
 
-  input_row.appendChild(select);
+  checkbox.addEventListener('change', function onChangeView() {
+    var id = select.options[select.selectedIndex].value;
+    Shown[id] = checkbox.checked;
+    if (checkbox.checked) {
+      showMarkers(Places[id]);
+      showMarkers(Circles[id] || []);
+    } else {
+      hideMarkers(Places[id]);
+      hideMarkers(Circles[id] || []);
+    }
+  });
+
   input_row.appendChild(input);
+  input_row.appendChild(select);
+  input_row.appendChild(checkbox);
   input_row.appendChild(btn);
 
   btn.addEventListener('click', function() {
+    var id = select.options[select.selectedIndex].value;
     var elem = select.children[select.selectedIndex];
-    constraints[select.options[select.selectedIndex].value] = +input.value;
+    constraints[id] = +input.value;
     select.innerHTML = '';
     select.appendChild(elem);
     input_row.removeChild(btn);
+
+    var deleteBtn = kr.button('-');
+    deleteBtn.addEventListener('click', function() {
+      delete constraints[id];
+      var length = $_('#constraints').children.length;
+      var select = $_('#constraints').children[length - 1].children[1];
+      select.innerHTML = '';
+      getAvailableConstraints().forEach(text => {
+        select.appendChild(kr('option', {'value': TYPES[text]}, text))
+      });
+      $_('#constraints').removeChild(input_row);
+      hideMarkers(Places[id]);
+      hideMarkers(Circles[id] || []);
+    });
+
+    input_row.appendChild(deleteBtn);
     begin();
   });
 
@@ -72,7 +112,9 @@ function begin() {
 
 begin();
 
-
+var Shown   = {};
+var Circles = {};
+var Places  = {};
 var Markers = [];
 
 function clearOverlays() {
@@ -82,6 +124,9 @@ function clearOverlays() {
   Markers.length = 0;
 }
 
+function hideMarkers(a) { a.forEach(m => m.setMap(null)); }
+function showMarkers(a) { a.forEach(m => m.setMap(map)); }
+
 function renderEmpty(e) {
   return kr.div({"class": "result"}, [
     kr.span({"class": "address"}, e.address),
@@ -89,46 +134,104 @@ function renderEmpty(e) {
   ]);
 }
 
-$_('#submit').addEventListener('click', function() {
-  var u = "/query?" + $.param(constraints);
-  $.getJSON(u, function(data) {
-    clearOverlays();
-    var results = $_('#results');
-    results.innerHTML = '';
-    console.log(data.radii);
-    data.adjacent.forEach(function(a) {
+$.getJSON('/static/centers.json', function(data) {
+  Object.keys(data).forEach(function(type) {
+    data[type].forEach(a => {
       var pos = a.geometry.location;
       var marker = new google.maps.Marker({
         position: pos,
-        map: map,
         icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
       });
-      Markers.push(marker);
-      marker.setMap(map);
+      if (!Places[type]) {
+        Places[type] = [];
+      }
+      Places[type].push(marker);
     });
+  });
+});
+
+function plotRadii(radii) {
+  Object.keys(radii).forEach(t => {
+    Places[t].forEach(function(place) {
+      Circles[t] = Circles[t] || [];
+
+      var cityCircle = new google.maps.Circle({
+        strokeColor: '#99bbff',
+        strokeOpacity: 0.50,
+        strokeWeight: 2,
+        fillColor: '#99bbff',
+        fillOpacity: 0.05,
+        center: { lat: place.position.lat(), lng: place.position.lng() },
+        radius: radii[t],
+      });
+
+      if (Shown[t]) cityCircle.setMap(map);
+      Circles[t].push(cityCircle);
+    });
+  });
+}
+
+function handleResponse(solution, radii) {
+  $_('#radii').innerHTML = '';
+  var p = kr.p('Found ' + solution.length + ' places, ');
+  var ul = kr.ul(
+    Object.keys(radii).map(function(t) {
+      var a = Object.keys(TYPES).filter(function(key) {return TYPES[key] === t})[0];
+      return kr.li('within ' + radii[t] + 'm of ' + a);
+    })
+  );
+  $_('#radii').innerHTML = kr.div([p, ul]).innerHTML;
+}
+
+$_('#submit').addEventListener('click', function() {
+  var o = {};
+  Object.keys(constraints).forEach(function(id) {
+    if (+constraints[id] > 0) {
+      o[id] = +constraints[id];
+    }
+  });
+  var u = "/query?" + $.param(o);
+  $.getJSON(u, function(data) {
+    clearOverlays();
+    Object.keys(Circles).forEach(function(id) {
+      hideMarkers(Circles[id]);
+    });
+    Circles = {};
+    var results = $_('#results');
+    results.innerHTML = '';
+    plotRadii(data.radii);
+    handleResponse(data.solution, data.radii);
     data.solution.forEach(function(e) {
-      results.appendChild(renderEmpty(e));
+      var position = { lat: e.loc[0], lng: e.loc[1] };
       var marker = new google.maps.Marker({
-        position: { lat: e.loc[0], lng: e.loc[1] },
+        position: position,
         map: map
       });
       Markers.push(marker);
       marker.setMap(map);
+
+      var infowindow = new google.maps.InfoWindow({
+        content: "<p>" + e.raw.display_name + "</p>",
+      });
+
+      marker.addListener('click', function() {
+        infowindow.open(map, marker);
+        map.setCenter(position);
+        map.setZoom(15);
+      });
     });
   });
 });
   </script>
   <script>
-var map;
-function initMap() {
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: {lat: 54.7, lng:-1.57},
-    zoom: 13,
-    scaleControl: true,
-  });
-}
+var map = new google.maps.Map(document.getElementById('map'), {
+  center: {lat: 54.7, lng:-1.57},
+  zoom: 13,
+  scaleControl: true,
+});
+$.getJSON('/static/map-style.json', function(style) {
+  map.setOptions({styles: style});
+})
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdh5RdEECP7SE1AvSc_0g3BNO632t_Ghk&callback=initMap"
-  async defer></script>
 </body>
 </html>
