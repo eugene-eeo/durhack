@@ -4,6 +4,7 @@
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
   <script src='/static/korah.min.js'></script>
   <link rel='stylesheet' href='/static/style.css'/>
+  <link rel='icon' href='/static/favicon.ico'/>
   <style>
 #map {
   width: 100%;
@@ -49,6 +50,23 @@ var TYPES = {
     'Parks':                'park',
     'University Buildings': 'university',
 };
+var MarkerIcons = [
+'http://maps.gstatic.com/mapfiles/ms2/micons/lightblue.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/blue.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/pink.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/orange.png', 
+'http://maps.gstatic.com/mapfiles/ms2/micons/green.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/yellow.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/purple.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/lightblue-dot.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/pink-dot.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/orange-dot.png', 
+'http://maps.gstatic.com/mapfiles/ms2/micons/green-dot.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png', 
+'http://maps.gstatic.com/mapfiles/ms2/micons/purple-dot.png',
+'http://maps.gstatic.com/mapfiles/ms2/micons/green.png',
+];
 
 var constraints = {};
 var $_ = document.querySelector.bind(document);
@@ -160,12 +178,13 @@ function renderEmpty(e) {
 }
 
 $.getJSON('/static/centers.json', function(data) {
-  Object.keys(data).forEach(function(type) {
+  Object.keys(data).forEach(function(type, i) {
+    console.log(type, MarkerIcons[i]);
     data[type].forEach(a => {
       var pos = a.geometry.location;
       var marker = new google.maps.Marker({
         position: pos,
-        icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+        icon: MarkerIcons[i],  // 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
       });
       Places[type] = Places[type] || [];
       Places[type].push(marker);
@@ -266,11 +285,17 @@ function centerAtMark(mark) {
 
 var cursor = 0;
 $('#prev').on('click', function() {
+  if (Markers.length == 0) {
+    return;
+  }
   cursor = (cursor - 1) % Markers.length;
   centerAtMark(Markers[cursor]);
   $('#cursor').text(cursor+1);
 });
 $('#next').on('click', function() {
+  if (Markers.length == 0) {
+    return;
+  }
   cursor = (cursor + 1) % Markers.length;
   centerAtMark(Markers[cursor]);
   $('#cursor').text(cursor+1);

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Lato');
 
 body {
-  margin: 2em auto 10em auto;
+  margin: 2em auto 1em auto;
   width: 50em;
   font-family: 'Lato';
 }
@@ -50,4 +50,8 @@ h2 {
 
 .floatright {
   float: right;
+}
+
+.hidden {
+  display: none;
 }
