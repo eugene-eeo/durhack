@@ -25,7 +25,7 @@ def best_within(houses, centresList, rList):
     for i, (centers, r) in enumerate(zip(centresList, rList)):
         houses, adjacent = within(houses, centers, r)
         if len(houses) == 0:
-            return (houses, i)
+            return (houses, adj, i)
         adj.update(adjacent)
     return (houses, adj, i)
 
