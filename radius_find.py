@@ -23,7 +23,7 @@ def best_within(houses, centresList, rList):
         houses = within(houses, centers, r)
         if len(houses) == 0:
             return houses, i
-    return houses, i
+    return houses, len(centresList)-1
 
 
 def best_approx(houses, centresList, rList):
@@ -40,6 +40,9 @@ def find_empty(constraints):
 
     centersList = []
     rList = []
+
+    if not constraints:
+        return {"solution": [], "radii": []}
 
     for type, radius in constraints:
         centersList.append(centers[type])

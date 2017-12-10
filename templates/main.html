@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>undex</h1>
-  <h2>the ‘unoccupied’ index</h2>
+  <h2>the unoccupied index</h2>
 
   <div id='constraints'></div>
   <button id='submit'>Find</button>
@@ -73,10 +73,16 @@ function createInputRow() {
     'placeholder': 'Distance from (m)',
   });
   var checkbox = kr.input({'type': 'checkbox'});
+  var prevId = null;
 
-  checkbox.addEventListener('change', function onChangeView() {
+  var onChangeView = function() {
+    if (prevId) {
+      Shown[prevId] = null;
+      delete constraints[prevId];
+    }
     var id = select.options[select.selectedIndex].value;
     input.setAttribute('attr-id', id);
+    constraints[id] = +input.value;
     Shown[id] = checkbox.checked;
     if (checkbox.checked) {
       showMarkers(Places[id]);
@@ -85,7 +91,11 @@ function createInputRow() {
       hideMarkers(Places[id]);
       hideMarkers(Circles[id] || []);
     }
-  });
+    prevId = id;
+  };
+
+  checkbox.addEventListener('change', onChangeView);
+  select.addEventListener('change', onChangeView);
 
   input_row.appendChild(input);
   input_row.appendChild(select);
@@ -116,6 +126,7 @@ function createInputRow() {
       $_('#constraints').removeChild(input_row);
       hideMarkers(Places[id]);
       hideMarkers(Circles[id] || []);
+      Shown[id] = false;
     });
 
     input_row.appendChild(deleteBtn);
@@ -154,6 +165,14 @@ $.getJSON('/static/centers.json', function(data) {
       });
       Places[type] = Places[type] || [];
       Places[type].push(marker);
+
+      var infowindow = new google.maps.InfoWindow({
+        content: "<h1>" + a.name + "</h1><p>Rating: " + a.rating + "</p>",
+      });
+
+      marker.addListener('click', function() {
+        infowindow.open(map, marker);
+      });
     });
   });
 });
@@ -161,8 +180,6 @@ $.getJSON('/static/centers.json', function(data) {
 function plotRadii(radii) {
   Object.keys(radii).forEach(t => {
     Places[t].forEach(function(place) {
-      Circles[t] = Circles[t] || [];
-
       var cityCircle = new google.maps.Circle({
         strokeColor: '#99bbff',
         strokeOpacity: 0.50,
@@ -173,6 +190,9 @@ function plotRadii(radii) {
         radius: radii[t],
       });
 
+      if (!Circles[t]) {
+        Circles[t] = [];
+      }
       if (Shown[t]) cityCircle.setMap(map);
       Circles[t].push(cityCircle);
     });
@@ -183,6 +203,9 @@ function handleResponse(solution, radii) {
   Object.keys(radii).forEach(id => {
     $('input[attr-id="'+id+'"]').val(radii[id]);
   });
+  if (solution.length == 0) {
+    return;
+  }
   cursor = 0;
   $('#cursor').text(cursor+1);
   $('#num-results').text(solution.length);
@@ -256,7 +279,7 @@ var map = new google.maps.Map(document.getElementById('map'), {
 });
 $.getJSON('/static/map-style.json', function(style) {
   map.setOptions({styles: style});
-})
+});
   </script>
 </body>
 </html>
