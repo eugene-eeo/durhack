@@ -1,0 +1,124 @@
+<html>
+<head>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+  <script src='/static/korah.min.js'></script>
+  <style>
+#map {
+  width: 100%;
+  height: 30em;
+}
+  </style>
+</head>
+<body>
+  <h1>Find</h1>
+
+  <div id='constraints'></div>
+  <button id='submit'>Find</button>
+  <hr/>
+  <div id="map"></div>
+  <div id='results'></div>
+
+  <script>
+TYPES = {
+    'Electronics Store': 'electronics_store',
+    'ATM':               'atm',
+    'Place of Worship':  'place_of_worship',
+    'Bar':               'bar',
+    'Landmark':          'point_of_interest',
+    'Banks':             'bank',
+    'Lodging':           'lodging',
+    'Food':              'food',
+    'Stores':            'store',
+    'Establishments':    'establishment',
+    'Restaurant':        'restaurant',
+    'Theatres':          'movie_theater',
+    'Museums':           'museum',
+    'Park':              'park',
+    'University':        'university',
+}
+
+var constraints = {};
+var $_ = document.querySelector.bind(document);
+
+function begin() {
+  var input_row = kr('div');
+  var select = kr('select');
+
+  Object.keys(TYPES).forEach(text => {
+    var id = TYPES[text];
+    if (!(id in constraints)) {
+      select.appendChild(kr('option', {'value': id}, text))
+    }
+  });
+
+  var btn = kr.button('+');
+  var input = kr.input({'type': 'number'});
+
+  input_row.appendChild(select);
+  input_row.appendChild(input);
+  input_row.appendChild(btn);
+
+  btn.addEventListener('click', function() {
+    var elem = select.children[select.selectedIndex];
+    constraints[select.options[select.selectedIndex].value] = +input.value;
+    select.innerHTML = '';
+    select.appendChild(elem);
+    input_row.removeChild(btn);
+    begin();
+  });
+
+  $_('#constraints').appendChild(input_row);
+}
+
+begin();
+
+
+var Markers = [];
+
+function clearOverlays() {
+  for (var i = 0; i < Markers.length; i++ ) {
+    Markers[i].setMap(null);
+  }
+  Markers.length = 0;
+}
+
+function renderEmpty(e) {
+  return kr.div({"class": "result"}, [
+    kr.span({"class": "address"}, e.address),
+    kr.span({"class": "postcode"}, e.postcode),
+  ]);
+}
+
+$_('#submit').addEventListener('click', function() {
+  var u = "/query?" + $.param(constraints);
+  $.getJSON(u, function(data) {
+    clearOverlays();
+    var results = $_('#results');
+    results.innerHTML = '';
+    data.forEach(function(e) {
+      console.log(e);
+      results.appendChild(renderEmpty(e));
+      var marker = new google.maps.Marker({
+        position: { lat: e.loc[0], lng: e.loc[1] },
+        map: map
+      });
+      Markers.push(marker);
+      marker.setMap(map);
+    });
+  });
+});
+  </script>
+  <script>
+var map;
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: 54.7, lng:-1.57},
+    zoom: 13,
+    scaleControl: true,
+  });
+}
+  </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdh5RdEECP7SE1AvSc_0g3BNO632t_Ghk&callback=initMap"
+  async defer></script>
+</body>
+</html>
