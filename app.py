@@ -29,7 +29,7 @@ def main():
 @app.route('/query')
 def data():
     r = request.args
-    return jsonify(find_empty([(k, int(r[k])) for k in r]))
+    return jsonify(find_empty([(k, float(r[k])) for k in r]))
 
 
 if __name__ == '__main__':

@@ -2,6 +2,10 @@ import json
 import math
 
 
+EMPTY   = json.load(open('businesses.json'))
+CENTERS = json.load(open('centers.json'))
+
+
 def within(houses, centres, r):
     found = 0
     available = []
@@ -35,20 +39,15 @@ def best_approx(houses, centresList, rList):
 
 
 def find_empty(constraints):
-    empty   = json.load(open('businesses.json'))
-    centers = json.load(open('centers.json'))
-
     centersList = []
     rList = []
-
     if not constraints:
         return {"solution": [], "radii": []}
 
     for type, radius in constraints:
-        centersList.append(centers[type])
+        centersList.append(CENTERS[type])
         rList.append(radius)
-
-    sol, radii = best_approx(empty, centersList, rList)
+    sol, radii = best_approx(EMPTY, centersList, rList)
     return {
         "solution": sol,
         "radii":    {constraints[i][0]: radii[i] for i in range(len(constraints))},

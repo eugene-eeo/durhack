@@ -73,16 +73,18 @@ function createInputRow() {
     'placeholder': 'Distance from (m)',
   });
   var checkbox = kr.input({'type': 'checkbox'});
-  var prevId = null;
+  var confirm  = false;
 
   var onChangeView = function() {
-    if (prevId) {
-      Shown[prevId] = null;
-      delete constraints[prevId];
+    var prev = input.getAttribute('attr-id') || null;
+    if (prev) {
+      Shown[prev] = false;
+      hideMarkers(Places[prev]);
+      hideMarkers(Circles[prev] || []);
     }
+
     var id = select.options[select.selectedIndex].value;
     input.setAttribute('attr-id', id);
-    constraints[id] = +input.value;
     Shown[id] = checkbox.checked;
     if (checkbox.checked) {
       showMarkers(Places[id]);
@@ -91,7 +93,6 @@ function createInputRow() {
       hideMarkers(Places[id]);
       hideMarkers(Circles[id] || []);
     }
-    prevId = id;
   };
 
   checkbox.addEventListener('change', onChangeView);
@@ -103,13 +104,16 @@ function createInputRow() {
   input_row.appendChild(btn);
 
   input.addEventListener('change', function() {
+    if (!confirm) return;
     var id = select.options[select.selectedIndex].value;
     constraints[id] = +input.value;
   });
 
   btn.addEventListener('click', function() {
+    confirm = true;
     var id = select.options[select.selectedIndex].value;
     var elem = select.children[select.selectedIndex];
+    constraints[id] = +input.value;
     select.innerHTML = '';
     select.appendChild(elem);
     input_row.removeChild(btn);
@@ -127,6 +131,7 @@ function createInputRow() {
       hideMarkers(Places[id]);
       hideMarkers(Circles[id] || []);
       Shown[id] = false;
+      Circles[id] = [];
     });
 
     input_row.appendChild(deleteBtn);
@@ -202,6 +207,7 @@ function plotRadii(radii) {
 function handleResponse(solution, radii) {
   Object.keys(radii).forEach(id => {
     $('input[attr-id="'+id+'"]').val(radii[id]);
+    constraints[id] = parseFloat(radii[id]);
   });
   if (solution.length == 0) {
     return;
