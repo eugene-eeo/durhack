@@ -17,6 +17,11 @@
 
   <div id='constraints'></div>
   <button id='submit'>Find</button>
+  <div class='floatright'>
+    <center><span id='cursor'>0</span>/<span id='num-results'>0</span> results<br/></center>
+    <button id='prev'>Prev</button>
+    <button id='next'>Next</button>
+  </div>
   <hr/>
   <div id="map"></div>
   <div id='results'></div>
@@ -24,7 +29,11 @@
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdh5RdEECP7SE1AvSc_0g3BNO632t_Ghk"></script>
   <script>
-TYPES = {
+var Shown   = {};
+var Circles = {};
+var Places  = {};
+var Markers = [];
+var TYPES = {
     'Electronics Stores': 'electronics_store',
     'ATMs':               'atm',
     'Places of Worship':  'place_of_worship',
@@ -45,27 +54,29 @@ TYPES = {
 var constraints = {};
 var $_ = document.querySelector.bind(document);
 
+console.log($_);
+
 function getAvailableConstraints() {
-  return Object.keys(TYPES).filter(text => {
-    var id = TYPES[text];
-    return !(id in constraints);
-  });
+  return Object.keys(TYPES)
+    .filter(text => !(TYPES[text] in constraints))
+    .map(text => kr('option', {'value': TYPES[text]}, text));
 }
 
-function begin() {
+function createInputRow() {
   var input_row = kr('div');
-  var select = kr('select');
-
-  getAvailableConstraints().forEach(text => {
-    select.appendChild(kr('option', {'value': TYPES[text]}, text))
-  });
+  var select = kr('select', getAvailableConstraints());
 
   var btn = kr.button('+');
-  var input = kr.input({'type': 'number', 'placeholder': 'Distance from (m)'});
+  var input = kr.input({
+    'type': 'number',
+    'step': 'any',
+    'placeholder': 'Distance from (m)',
+  });
   var checkbox = kr.input({'type': 'checkbox'});
 
   checkbox.addEventListener('change', function onChangeView() {
     var id = select.options[select.selectedIndex].value;
+    input.setAttribute('attr-id', id);
     Shown[id] = checkbox.checked;
     if (checkbox.checked) {
       showMarkers(Places[id]);
@@ -81,10 +92,14 @@ function begin() {
   input_row.appendChild(checkbox);
   input_row.appendChild(btn);
 
+  input.addEventListener('change', function() {
+    var id = select.options[select.selectedIndex].value;
+    constraints[id] = +input.value;
+  });
+
   btn.addEventListener('click', function() {
     var id = select.options[select.selectedIndex].value;
     var elem = select.children[select.selectedIndex];
-    constraints[id] = +input.value;
     select.innerHTML = '';
     select.appendChild(elem);
     input_row.removeChild(btn);
@@ -95,8 +110,8 @@ function begin() {
       var length = $_('#constraints').children.length;
       var select = $_('#constraints').children[length - 1].children[1];
       select.innerHTML = '';
-      getAvailableConstraints().forEach(text => {
-        select.appendChild(kr('option', {'value': TYPES[text]}, text))
+      getAvailableConstraints().forEach(li => {
+        select.appendChild(li);
       });
       $_('#constraints').removeChild(input_row);
       hideMarkers(Places[id]);
@@ -104,18 +119,13 @@ function begin() {
     });
 
     input_row.appendChild(deleteBtn);
-    begin();
+    createInputRow();
   });
 
   $_('#constraints').appendChild(input_row);
 }
 
-begin();
-
-var Shown   = {};
-var Circles = {};
-var Places  = {};
-var Markers = [];
+createInputRow();
 
 function clearOverlays() {
   for (var i = 0; i < Markers.length; i++ ) {
@@ -142,9 +152,7 @@ $.getJSON('/static/centers.json', function(data) {
         position: pos,
         icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
       });
-      if (!Places[type]) {
-        Places[type] = [];
-      }
+      Places[type] = Places[type] || [];
       Places[type].push(marker);
     });
   });
@@ -172,15 +180,13 @@ function plotRadii(radii) {
 }
 
 function handleResponse(solution, radii) {
-  $_('#radii').innerHTML = '';
-  var p = kr.p('Found ' + solution.length + ' places, ');
-  var ul = kr.ul(
-    Object.keys(radii).map(function(t) {
-      var a = Object.keys(TYPES).filter(function(key) {return TYPES[key] === t})[0];
-      return kr.li('within ' + radii[t] + 'm of ' + a);
-    })
-  );
-  $_('#radii').innerHTML = kr.div([p, ul]).innerHTML;
+  Object.keys(radii).forEach(id => {
+    $('input[attr-id="'+id+'"]').val(radii[id]);
+  });
+  cursor = 0;
+  $('#cursor').text(cursor+1);
+  $('#num-results').text(solution.length);
+  centerAtMark(Markers[0]);
 }
 
 $_('#submit').addEventListener('click', function() {
@@ -200,7 +206,6 @@ $_('#submit').addEventListener('click', function() {
     var results = $_('#results');
     results.innerHTML = '';
     plotRadii(data.radii);
-    handleResponse(data.solution, data.radii);
     data.solution.forEach(function(e) {
       var position = { lat: e.loc[0], lng: e.loc[1] };
       var marker = new google.maps.Marker({
@@ -216,11 +221,31 @@ $_('#submit').addEventListener('click', function() {
 
       marker.addListener('click', function() {
         infowindow.open(map, marker);
-        map.setCenter(position);
-        map.setZoom(15);
+        centerAtMark(marker);
       });
     });
+    handleResponse(data.solution, data.radii);
   });
+});
+
+function centerAtMark(mark) {
+  map.setCenter({
+    lat: mark.position.lat(),
+    lng: mark.position.lng(),
+  });
+  map.setZoom(20);
+}
+
+var cursor = 0;
+$('#prev').on('click', function() {
+  cursor = (cursor - 1) % Markers.length;
+  centerAtMark(Markers[cursor]);
+  $('#cursor').text(cursor+1);
+});
+$('#next').on('click', function() {
+  cursor = (cursor + 1) % Markers.length;
+  centerAtMark(Markers[cursor]);
+  $('#cursor').text(cursor+1);
 });
   </script>
   <script>
