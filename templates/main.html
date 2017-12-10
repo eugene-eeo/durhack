@@ -95,8 +95,18 @@ $_('#submit').addEventListener('click', function() {
     clearOverlays();
     var results = $_('#results');
     results.innerHTML = '';
-    data.forEach(function(e) {
-      console.log(e);
+    console.log(data.radii);
+    data.adjacent.forEach(function(a) {
+      var pos = a.geometry.location;
+      var marker = new google.maps.Marker({
+        position: pos,
+        map: map,
+        icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+      });
+      Markers.push(marker);
+      marker.setMap(map);
+    });
+    data.solution.forEach(function(e) {
       results.appendChild(renderEmpty(e));
       var marker = new google.maps.Marker({
         position: { lat: e.loc[0], lng: e.loc[1] },
