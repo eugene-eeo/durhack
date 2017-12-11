@@ -52,10 +52,17 @@ undex.Map = function(map, centers) {
     }
 
     function plotSolutions(solutions) {
-        solutionMarkers = solutions.map(sol => {
+        solutionMarkers = solutions.map((sol, i) => {
             var marker = new google.maps.Marker({
                 position: {lat: sol.loc[0], lng: sol.loc[1]},
                 map: map,
+            });
+            var info_window = new google.maps.InfoWindow({
+                content: "<p>" + sol.raw.display_name + "</p>",
+            });
+            marker.addListener('click', function() {
+                info_window.open(map, marker);
+                centerAtSolution(i);
             });
             return marker;
         });
@@ -71,6 +78,7 @@ undex.Map = function(map, centers) {
             lat: solutionMarkers[i].position.lat(),
             lng: solutionMarkers[i].position.lng(),
         });
+        map.setZoom(18);
     }
 
     return {

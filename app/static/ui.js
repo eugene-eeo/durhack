@@ -19,16 +19,16 @@ undex.UI = function() {
     var cursor = 0;
 
     $('#prev').click(() => {
-        if (results == 0) return;
+        if (results == 0 || cursor == 0) return;
         cursor = (cursor - 1) % results;
-        $('#cursor').text(cursor);
+        $('#cursor').text(cursor+1);
         undex.globals.map.centerAtSolution(cursor);
     });
 
     $('#next').click(() => {
         if (results == 0) return;
         cursor = (cursor + 1) % results;
-        $('#cursor').text(cursor);
+        $('#cursor').text(cursor+1);
         undex.globals.map.centerAtSolution(cursor);
     });
 
@@ -75,10 +75,16 @@ undex.UI = function() {
 
         var addBtn = $('<button>').text('+');
         addBtn.one('click', function() {
+            var id = input.attr('data-attr');
+            select.children('option').each(function() {
+                var $op = $(this);
+                if ($op.attr('data-attr') !== id) {
+                    $op.remove();
+                }
+            });
             input.attr('data-confirmed', '1');
             addBtn.text('-');
             addBtn.one('click', function() {
-                var id = input.attr('data-attr');
                 var select = $('#constraints').last().find('select');
                 select.append($('<option>', {'data-attr': id}).text(LABELS[id]));
                 div.remove();
