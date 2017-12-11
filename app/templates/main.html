@@ -1,0 +1,34 @@
+<html>
+<head>
+  <title>undex</title>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+  <script src='/static/korah.min.js'></script>
+  <link rel='stylesheet' href='/static/style.css'/>
+  <link rel='icon' href='/static/favicon.ico'/>
+  <style>
+  </style>
+</head>
+<body>
+  <h1>undex</h1>
+  <h2>the unoccupied index</h2>
+
+  <div id='constraints'></div>
+  <button id='submit'>Find</button>
+  <div id='result-cursor' class='floatright'>
+    <center><span id='cursor'>0</span>/<span id='num-results'>0</span> results<br/></center>
+    <button id='prev'>Prev</button>
+    <button id='next'>Next</button>
+  </div>
+  <hr/>
+  <div id="map"></div>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdh5RdEECP7SE1AvSc_0g3BNO632t_Ghk"></script>
+  <script>
+    window.undex = {};
+  </script>
+  <script src='/static/maps.js'></script>
+  <script src="/static/ui.js"></script>
+  <script src="/static/app.js"></script>
+<span style='font-size: 6px'>in memory of google maps' ugly cousin, nitelyf 9/12/2017-13:00 to 21:00</span>
+</body>
+</html>

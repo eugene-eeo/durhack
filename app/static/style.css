@@ -6,22 +6,8 @@ body {
   font-family: 'Lato';
 }
 
-input {
-  font: inherit;
-}
-
-select {
-  font: inherit;
-  width: 14em;
-}
-
-option {
-  font: inherit;
-}
-
-button {
-  font: inherit;
-}
+select { width: 14em; }
+select, input, option, button { font: inherit; }
 
 input[type="checkbox"] {
   margin-right: 1em;
@@ -54,4 +40,9 @@ h2 {
 
 .hidden {
   display: none;
+}
+
+#map {
+  width: 100%;
+  height: 30em;
 }
