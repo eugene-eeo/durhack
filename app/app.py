@@ -10,7 +10,6 @@ def main():
 
 @app.route('/query', methods=['POST'])
 def data():
-    print(request.json)
     constraints = request.json
     solution, radii = find_empty(constraints)
     return jsonify({
