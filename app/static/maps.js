@@ -4,11 +4,17 @@ undex.Map = function(map, centers) {
     var solutionMarkers = [];
 
     function show(id) {
+        /*
+         * If the types of places given by `id` haven't been plotted
+         * yet, plot all of them and save them.
+         */
         if (!centerMarkers[id]) {
             centerMarkers[id] = centers[id].map(center => {
-                var m = createMarker(center);
-                m.setMap(map);
-                return m;
+                return new google.maps.Marker({
+                    position: center.geometry.location,
+                    icon: 'http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png',
+                    map: map,
+                });
             });
         }
         centerMarkers[id].forEach(marker => marker.setMap(map));
@@ -18,16 +24,6 @@ undex.Map = function(map, centers) {
     function hide(id) {
         (centerMarkers[id] || []).forEach(marker => marker.setMap(null));
         (circleMarkers[id] || []).forEach(marker => marker.setMap(null));
-    }
-
-    function createMarker(center) {
-        return new google.maps.Marker({
-            position: center.geometry.location,
-            icon: 'http://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png',
-        });
-    }
-
-    function createCircle(center) {
     }
 
     function plotConstraint(id, radius) {
